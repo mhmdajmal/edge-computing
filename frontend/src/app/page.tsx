@@ -1,0 +1,172 @@
+'use client';
+
+import React from 'react';
+import Header from '../components/layout/Header';
+import MetricCard from '../components/dashboard/MetricCard';
+import TerminalStreamConsole from '../components/dashboard/TerminalStreamConsole';
+import { useQuery } from '@tanstack/react-query';
+import { fetchDashboard } from '../services/api';
+import {
+  Users,
+  Building2,
+  Thermometer,
+  Zap,
+  Sparkles,
+  Timer,
+  Film
+} from 'lucide-react';
+
+export default function Dashboard() {
+  const { data: dashboard } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: fetchDashboard,
+    refetchInterval: 200,
+  });
+
+  const getPeopleCountPrediction = (level?: string) => {
+    switch (level) {
+      case 'HIGH':
+        return 'More than 10 persons';
+      case 'MEDIUM':
+        return '3 - 10 persons';
+      case 'LOW':
+      default:
+        return '1 - 2 persons';
+    }
+  };
+
+  const getOccupancyBadge = (level?: string) => {
+    switch (level) {
+      case 'LOW':
+        return { color: 'emerald', badge: 'LOW (1-2)', bg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+      case 'MEDIUM':
+        return { color: 'amber', badge: 'MEDIUM (3-10)', bg: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
+      case 'HIGH':
+        return { color: 'rose', badge: 'HIGH (10+)', bg: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
+      default:
+        return { color: 'blue', badge: 'STANDBY', bg: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+    }
+  };
+
+  const occBadge = getOccupancyBadge(dashboard?.occupancy_level);
+  const countPrediction = getPeopleCountPrediction(dashboard?.occupancy_level);
+
+  return (
+    <div className="flex-1 flex flex-col min-h-screen">
+      <Header title="Edge AI Classroom Telemetry Dashboard" />
+
+      <main className="flex-1 p-6 space-y-6">
+        {/* Primary Metric Grid Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard
+            title="People Count Prediction"
+            value={countPrediction}
+            subtitle="Classroom Occupancy Range"
+            icon={Users}
+            color="blue"
+            badge={countPrediction}
+          />
+
+          <MetricCard
+            title="Occupancy Level"
+            value={dashboard?.occupancy_level ?? 'LOW'}
+            subtitle="Classroom Capacity State"
+            icon={Building2}
+            color={occBadge.color as any}
+            badge={occBadge.badge}
+            badgeColor={occBadge.bg}
+          />
+
+          <MetricCard
+            title="Smart AC Power"
+            value={dashboard?.ac_status.power ?? 'OFF'}
+            subtitle={`Target Temp: ${dashboard?.ac_status.temperature ? `${dashboard.ac_status.temperature}°C` : '--'}`}
+            icon={Zap}
+            color={dashboard?.ac_status.power === 'ON' ? 'emerald' : 'rose'}
+            badge={dashboard?.ac_status.power === 'ON' ? 'COOLING ACTIVE' : 'POWER OFF'}
+            badgeColor={dashboard?.ac_status.power === 'ON' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'}
+          />
+
+          <MetricCard
+            title="AC Temperature"
+            value={dashboard?.ac_status.temperature ? `${dashboard.ac_status.temperature}°C` : '--'}
+            subtitle={`Fan: ${dashboard?.ac_status.fan_speed ?? 'OFF'} • Mode: ${dashboard?.ac_status.mode ?? 'OFF'}`}
+            icon={Thermometer}
+            color="cyan"
+          />
+        </div>
+
+        {/* Real-time Charts & Live Stream */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Live AI Video Stream Preview Card */}
+            <div className="glass-panel p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Film className="w-4 h-4 text-cyan-400" /> Live AI Video Feed & Telemetry Overlay (Teachable Machine)
+                </span>
+                <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  LIVE STREAM ACTIVE
+                </span>
+              </div>
+              <div className="relative aspect-video bg-black/80 rounded-xl overflow-hidden border border-white/10 flex items-center justify-center">
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_URL || ''}/api/stream`}
+                  alt="Live AI Stream"
+                  className="w-full h-full object-contain rounded-xl"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Balanced Side-by-Side Row: Video Pipeline Progress & Average Confidence (Much Wider Width) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Video Pipeline Progress */}
+              <div className="glass-panel p-5 space-y-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                    Video Pipeline Progress
+                  </span>
+                  <span className="text-xs font-mono text-cyan-400 font-bold">
+                    {dashboard?.progress_percentage ?? 0}%
+                  </span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden my-auto">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${dashboard?.progress_percentage ?? 0}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-gray-400 font-mono">
+                  <span>Frame: {dashboard?.current_frame ?? 0}</span>
+                  <span>Total: {dashboard?.total_frames ?? 0}</span>
+                </div>
+              </div>
+
+              {/* Average Confidence (Wider 50% Width) */}
+              <div>
+                <MetricCard
+                  title="Average Confidence"
+                  value={dashboard?.confidence_avg ? `${(dashboard.confidence_avg * 100).toFixed(1)}%` : '0.0%'}
+                  subtitle="Neural Model Certainty"
+                  icon={Sparkles}
+                  color="emerald"
+                />
+              </div>
+            </div>
+
+            {/* Real-Time Telemetry Terminal Stream */}
+            <TerminalStreamConsole
+              currentFrame={dashboard?.current_frame}
+              occupancyLevel={dashboard?.occupancy_level}
+              acStatus={dashboard?.ac_status}
+              isProcessing={dashboard?.is_processing}
+              currentVideo={dashboard?.current_video}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
