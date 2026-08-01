@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.9"
 
 services:
   backend:
@@ -13,14 +13,9 @@ services:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
     environment:
-      - ENV=production
-      - HOST=0.0.0.0
-      - PORT=8000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/dashboard"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      ENV: development
+      HOST: 0.0.0.0
+      PORT: 8000
     restart: unless-stopped
 
   frontend:
@@ -28,12 +23,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     container_name: smart_classroom_frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      NODE_ENV: development
     depends_on:
       - backend
     restart: unless-stopped
