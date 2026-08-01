@@ -24,6 +24,7 @@ export const uploadVideo = async (file: File): Promise<UploadResponse> => {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    timeout: 0, // No timeout for video uploads — large files over EC2 can take time
   });
   return response.data;
 };
