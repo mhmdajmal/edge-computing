@@ -39,9 +39,9 @@ uploads/*
 !uploads/.gitkeep
 
 # Environment Files & Secrets
-.env*
 .env
-.env*.local
+.env.*
+!.env.example
 
 # IDEs & Editor Metadata
 .vscode/
