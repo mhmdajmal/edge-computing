@@ -6,7 +6,7 @@ import Footer from '../../components/layout/Footer';
 import MetricCard from '../../components/dashboard/MetricCard';
 import RealtimeChart from '../../components/dashboard/RealtimeChart';
 import { useQuery } from '@tanstack/react-query';
-import { fetchStatistics, fetchTimeline } from '../../services/api';
+import { fetchStatistics, fetchTimeline, fetchDashboard } from '../../services/api';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -31,16 +31,29 @@ import {
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 export default function StatisticsPage() {
+  // Poll the dashboard to know if video is still being processed
+  const { data: dashboard } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: fetchDashboard,
+    refetchInterval: 1000,
+  });
+
+  // Video is considered "ended" when processing stopped and progress reached 100%
+  // or when there is no video loaded at all.
+  const videoEnded =
+    !dashboard?.is_processing &&
+    (dashboard?.progress_percentage === 100 || !dashboard?.current_video);
+
   const { data: stats } = useQuery({
     queryKey: ['statistics'],
     queryFn: fetchStatistics,
-    refetchInterval: 2000,
+    refetchInterval: videoEnded ? false : 2000,
   });
 
   const { data: timeline = [] } = useQuery({
     queryKey: ['timeline'],
     queryFn: () => fetchTimeline(100),
-    refetchInterval: 2000,
+    refetchInterval: videoEnded ? false : 2000,
   });
 
   // Doughnut Data for Occupancy Distribution
